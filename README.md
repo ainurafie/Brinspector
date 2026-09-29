@@ -28,7 +28,7 @@ brinspector/
 │   └── src/
 │       ├── lib/                  # Logika murni: filter, redaksi, payload, format, stats, report
 │       └── panel/                # UI panel DevTools
-│           ├── components/       # StatusBanner, InspectorHud, AiRootCauseCard, BreakdownPanel, …
+│           ├── components/       # StatusBanner, InspectorHud, AiRootCauseCard, BreakdownPanel, StackTraceViewer, IncidentNotes, …
 │           └── panel.css         # Design tokens dari Figma
 ├── backend/                      # Fastify: /health, /api/summarize (mock | azure | openai)
 └── tests/e2e/                    # Playwright (panel dengan chrome.devtools tiruan)
@@ -58,4 +58,4 @@ Buka DevTools di website mana pun → tab **BRINSPECTOR**.
 
 ## Status
 
-v0.2.0: panel sesuai desain Figma, AI Root Cause (mode mock), redaksi dasar, 89 test. Backlog: [docs/progress.md](docs/progress.md).
+v0.2.0: panel sesuai desain Figma, AI Root Cause (mode mock), redaksi dasar, incident notes & export (.HAR/JIRA/MD), UI stack trace, 110 test. Backlog: [docs/progress.md](docs/progress.md).

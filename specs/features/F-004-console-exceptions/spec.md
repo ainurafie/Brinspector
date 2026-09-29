@@ -1,6 +1,8 @@
 # F-004 — Console & JS Exceptions ("Console Trap")
 
-Status: **Backlog**
+Status: **UI & parser siap, capture backlog** — sudah: `src/lib/stack.js` (`parseErrorHeadline`, `parseStack` Chrome/Firefox, `buildCodeFrame`, `toExceptionView` dengan redaksi) + unit test, komponen `StackTraceViewer.vue` (node 1:1392, dari CSS export Figma) yang otomatis tampil di breakdown bila record punya `exception`. Backlog: hook Console Trap via `inspectedWindow.eval`, polling buffer, ambil source untuk code frame, baris `JS ERR` di stream, kartu *Exceptions*.
+
+Catatan desain: kolom waktu per frame (`0ms`, `+12ms`) di Figma tidak diimplementasikan karena stack trace tidak membawa data waktu; diganti nomor urut frame (`#1`, `#2`).
 
 UI: Figma frame 1:1130 — toggle *Console Trap*, kartu statistik *Exceptions*, baris `JS ERR` di *Active Failure Stream*, blok *Exception* + *Stack Frame Execution Order* di *Active Breakdown*. Frame 1:776 — kartu *Console & Script Errors*.
 

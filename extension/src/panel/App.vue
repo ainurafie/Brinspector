@@ -4,11 +4,13 @@ import StatusBanner from './components/StatusBanner.vue';
 import InspectorHud from './components/InspectorHud.vue';
 import AiRootCauseCard from './components/AiRootCauseCard.vue';
 import BreakdownPanel from './components/BreakdownPanel.vue';
+import IncidentNotes from './components/IncidentNotes.vue';
+import ExportFormatSelector from './components/ExportFormatSelector.vue';
 import { useNetworkErrors } from './useNetworkErrors.js';
 import { useAiSummary } from './useAiSummary.js';
 import { computeStats } from '../lib/stats.js';
 import { filterRecords } from '../lib/filter.js';
-import { buildMarkdownReport } from '../lib/report.js';
+import { buildMarkdownReport, buildJiraReport, buildRedactedHar } from '../lib/report.js';
 
 const { errors, paused, targetUrl, available, clear, ensureResponseBody } = useNetworkErrors();
 const ai = useAiSummary({ ensureResponseBody });
@@ -16,6 +18,8 @@ const ai = useAiSummary({ ensureResponseBody });
 const filter = ref('');
 const selectedId = ref(null);
 const toast = ref('');
+const notes = ref(''); // Incident Notes (spec F-006), included in Copy Report
+const tags = ref([]);
 
 const autoIntercept = computed({
   get: () => !paused.value,
@@ -63,8 +67,46 @@ async function copyText(text) {
 async function copyReport() {
   if (!selected.value) return;
   await ensureResponseBody(selected.value);
-  await copyText(buildMarkdownReport(selected.value, aiState.value.result || null));
+  await copyText(buildMarkdownReport(selected.value, aiState.value.result || null, { notes: notes.value, tags: tags.value }));
   flash('Report copied (redacted)');
+}
+
+function download(filename, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function stamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+}
+
+// Export bar (spec F-006). Every format is built from redacted data in src/lib/report.js.
+async function exportAs(format) {
+  const incident = { notes: notes.value, tags: tags.value };
+  if (format === 'har') {
+    await Promise.all(visible.value.map((record) => ensureResponseBody(record)));
+    // eslint-disable-next-line no-undef
+    const version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
+    download(`brinspector-${stamp()}.har`, JSON.stringify(buildRedactedHar(visible.value, { version }), null, 2), 'application/json');
+    flash('HAR downloaded (redacted)');
+    return;
+  }
+  if (!selected.value) return;
+  await ensureResponseBody(selected.value);
+  const ai = aiState.value.result || null;
+  if (format === 'jira') {
+    await copyText(buildJiraReport(selected.value, ai, incident));
+    flash('Jira markup copied (redacted)');
+  } else if (format === 'md') {
+    download(`brinspector-${stamp()}.md`, buildMarkdownReport(selected.value, ai, incident), 'text/markdown');
+    flash('Markdown downloaded (redacted)');
+  }
 }
 
 function onKeydown(event) {
@@ -102,7 +144,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
         <AiRootCauseCard :state="aiState" :has-selection="Boolean(selected)" @retry="generate(true)" @copy="copyReport" />
       </div>
 
-      <BreakdownPanel v-model:filter="filter" :record="selected" :match-count="visible.length" />
+      <div class="panel__col">
+        <BreakdownPanel v-model:filter="filter" :record="selected" :match-count="visible.length" />
+        <IncidentNotes v-model:notes="notes" v-model:tags="tags">
+          <template #export>
+            <ExportFormatSelector
+              :can-export-selected="Boolean(selected)"
+              :can-export-all="visible.length > 0"
+              @export="exportAs"
+            />
+          </template>
+        </IncidentNotes>
+      </div>
     </div>
 
     <p v-if="toast" class="panel__toast" role="status" data-testid="toast">{{ toast }}</p>

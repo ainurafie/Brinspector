@@ -3,7 +3,7 @@
 Panduan ini mengikuti alur workshop *GitHub Copilot: Build a Procurement System MVP*:
 **baseline yang sudah jalan → context engineering → spec → implementasi per checkpoint → test → dokumentasi → OpenSpec → review di GitHub**.
 
-Starter v0.2.0 sudah berisi panel DevTools sesuai desain Figma (frame 1:1130), AI Root Cause (mode mock), redaksi dasar, dan 89 test — setara "modul PR" di workshop. Fitur berikutnya (F-003 lengkap, F-004, F-006, provider AI nyata) adalah **backlog tim** yang dikerjakan bersama Copilot.
+Starter v0.2.0 sudah berisi panel DevTools sesuai desain Figma (frame 1:1130), AI Root Cause (mode mock), redaksi dasar, UI stack trace (1:1392), incident notes & export .HAR/JIRA/MD (1:776), dan 110 test — setara "modul PR" di workshop. Fitur berikutnya (F-003 lengkap, capture F-004, PDF, provider AI nyata) adalah **backlog tim** yang dikerjakan bersama Copilot.
 
 ### Link penting
 
@@ -34,7 +34,7 @@ Node Figma yang paling sering dipakai:
 | A — Panel/UI | Console Trap, stack frame, kartu Exceptions | F-004 (+ sisa F-001) | 1:1392 |
 | B — Privacy | Redaksi PII, redaksi ulang di backend, preview payload | F-003 | — |
 | C — AI/Backend | Provider Microsoft Foundry, tuning prompt, Swagger | F-002 (provider nyata) | 1:1298 |
-| D — QA/Docs | Incident notes & export, E2E, dokumentasi, demo | F-006 + eksplorasi F-005 | 1:776, 1:451 |
+| D — QA/Docs | Export PDF, E2E, dokumentasi, demo | sisa F-006 + eksplorasi F-005 | 1:776, 1:451 |
 
 Aturan Git: satu branch per fitur (`feature/f-004-console-trap`), merge lewat Pull Request, minimal 1 review teman + Copilot review.
 
@@ -110,14 +110,13 @@ Aturan Git: satu branch per fitur (`feature/f-004-console-trap`), merge lewat Pu
 
 1. Buka `.vscode/mcp.json` di VS Code → klik **Start** di atas entri `figma`.
 2. Browser terbuka → login Figma dengan akun yang punya akses ke file desain → izinkan VS Code.
-3. Uji koneksi dengan satu panggilan kecil (Copilot **Agent** mode):
+3. Uji koneksi **tanpa memakai kuota** (tool `whoami` tidak dihitung dalam limit):
    ```prompt
-   Using Figma MCP, get the metadata of https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1121 and tell me the node name.
+   Using Figma MCP, call whoami and tell me which Figma account and plan I am connected with.
    ```
-   Jawaban yang benar: *BRINSPECTOR Extension Logo*.
 4. **Stop** server `figma` lagi sampai benar-benar dipakai di Fase 4.
 
-**Aturan pakai Figma MCP (plan Starter, kuota kecil):**
+**Aturan pakai Figma MCP.** Kuota dihitung **per akun**: plan Starter hanya sekitar 20 panggilan per bulan, sedangkan seat Dev/Full di plan Professional atau Education sekitar 200 per hari (lihat halaman *Rate limits & access* di dokumentasi Figma). Kalau kuota satu anggota habis, anggota lain bisa login dengan akunnya sendiri, asalkan sudah diundang ke file.
 - Satu prompt = **satu node spesifik** (ambil link dari §11 `docs/plan.md`), jangan seluruh page `0-1` — respons page penuh sangat besar dan langsung menghabiskan kuota.
 - Minta Copilot menyesuaikan hasil ke komponen yang sudah ada (`extension/src/panel/components/`) dan token `panel.css`, bukan menyalin kode Figma mentah.
 - Kalau kuota habis (pesan *"reached the Figma MCP tool call limit"*), pakai jalur manual:
@@ -161,30 +160,21 @@ Pola untuk pekerjaan UI: **logika dulu (murni + unit test), baru tampilan dari F
 ```
 
 ### F-004 (Peran A) — Figma node 1:1392
-1. Logika:
-   ```prompt
-   /implement-checkpoint  feature: F-004  checkpoint: enable the Console Trap toggle — install an idempotent error hook via chrome.devtools.inspectedWindow.eval, poll the buffer every second, and parse stack traces in src/lib (with unit tests)
-   ```
-2. Tampilan (nyalakan server `figma` dulu):
-   ```prompt
-   Using Figma MCP, implement the stack trace viewer from https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1392
-   as extension/src/panel/components/StackTraceViewer.vue and show it in BreakdownPanel when a JS ERR row is selected.
-   Reuse panel.css tokens and existing components (BiIcon, StatCard). Do not add API calls.
-   ```
-3. Lanjutkan: baris `JS ERR` di stream → kartu statistik *Exceptions* (sesuai node [1:1159](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1159)) menggantikan *Client Error* atau jadi kartu ke-4.
+Komponen `StackTraceViewer.vue` dan parser `src/lib/stack.js` **sudah ada** (dibuat dari CSS export node 1:1392). Yang tersisa adalah menangkap exception dan mengisinya ke record:
+```prompt
+/implement-checkpoint  feature: F-004  checkpoint: enable the Console Trap toggle — install an idempotent error hook via chrome.devtools.inspectedWindow.eval, poll the buffer every second, and add each exception as a record with record.exception = toExceptionView({ message, stack }) so BreakdownPanel shows StackTraceViewer
+```
+Lanjutkan:
+- Ambil source file lewat `chrome.devtools.inspectedWindow.getResources()` → `getContent()` agar code frame terisi (`toExceptionView({ ..., source })`).
+- Baris `JS ERR` di stream (badge `tag--hot`), dan kartu statistik *Exceptions* (node [1:1159](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1159)).
+- E2E: perluas `chromeStub.js` agar `inspectedWindow.eval` mengembalikan buffer error palsu.
 
 ### F-006 (Peran D) — Figma node 1:776
-1. Logika:
-   ```prompt
-   /implement-checkpoint  feature: F-006  checkpoint: pure report builders in src/lib/report.js (markdown, jira, redacted HAR) with unit tests
-   ```
-2. Tampilan:
-   ```prompt
-   Using Figma MCP, implement the Incident Notes card (textarea, preset tags, character counter) and the export bar (.HAR, JIRA, MD)
-   from https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-776 as Vue components in extension/src/panel/components.
-   Wire the export buttons to the report builders in src/lib/report.js. Reuse panel.css tokens.
-   ```
-   Node 1:776 berukuran besar; kalau respons MCP terlalu besar, buka file di Figma, klik kartu *Catatan Insiden* dan bar ekspor, salin link node masing-masing (klik kanan → **Copy link to selection**), lalu minta satu per satu.
+Kartu *Incident Notes* (`IncidentNotes.vue`) dan export bar (`ExportFormatSelector.vue`) **sudah ada**: `.HAR` ter-redaksi, `JIRA` (clipboard), `MD` (unduh), dengan 5 E2E. Yang tersisa:
+```prompt
+/implement-checkpoint  feature: F-006  checkpoint: enable the PDF export button — open a printable report page (redacted, built from buildMarkdownReport) and call window.print(); keep it working inside a DevTools panel
+```
+Opsional: kartu *Diagnostic Bundle Packed* dari node 1:776.
 
 ### F-002 provider nyata (Peran C)
 1. Isi `backend/.env` dengan data Foundry: `AI_PROVIDER=azure`, `AI_BASE_URL=https://<resource>.openai.azure.com/openai/v1`, `AI_API_KEY`, `AI_MODEL`. Restart backend.
@@ -220,13 +210,12 @@ Document the latest state of the project in docs/progress.md.
 
 ## Fase 6 — E2E Playwright (Peran D)
 
-Sudah ada 10 skenario di `tests/e2e/` (capture, filter, Auto-Intercept, breakdown, AI happy path, shortcut, privasi payload, 422 + retry, backend offline). `chromeStub.js` memalsukan `chrome.devtools` sehingga panel bisa dites tanpa membuka DevTools sungguhan.
+Sudah ada 15 skenario di `tests/e2e/` (capture, filter, Auto-Intercept, breakdown, AI happy path, shortcut, privasi payload, 422 + retry, backend offline, notes & tag, export MD/HAR/JIRA tanpa rahasia). `chromeStub.js` memalsukan `chrome.devtools` sehingga panel bisa dites tanpa membuka DevTools sungguhan.
 
 Tambahkan untuk fitur baru:
 ```prompt
 Extend tests/e2e/chromeStub.js so inspectedWindow.eval can return a fake error buffer.
 Create tests/e2e/console-trap.spec.js: toggle Console Trap → a JS ERR row appears → breakdown shows the stack frames.
-Create tests/e2e/export.spec.js: exported Markdown and HAR never contain the fixture secret.
 Use data-testid selectors and clear assertions.
 ```
 

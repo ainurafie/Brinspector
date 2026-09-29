@@ -142,6 +142,19 @@ describe('report', () => {
     expect(md).toContain('404 Not Found');
     expect(md).not.toContain('AI Root Cause');
     expect(md).not.toContain('Response body');
+    expect(md).not.toContain('Catatan insiden');
+  });
+
+  test('includes incident notes and tags, with secrets in notes redacted', () => {
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTYifQ.SflKxwRJSMeKKF2QT4fwpM';
+    const md = buildMarkdownReport(record(500), null, {
+      notes: `  Terjadi setelah klik bayar. Token: ${jwt}  `,
+      tags: ['#Staging', '#P1-Blocker'],
+    });
+    expect(md).toContain('- **Tag:** #Staging #P1-Blocker');
+    expect(md).toContain('#### Catatan insiden');
+    expect(md).toContain('Terjadi setelah klik bayar.');
+    expect(md).not.toContain(jwt);
   });
 });
 
@@ -159,5 +172,51 @@ describe('checkHealth', () => {
   test('non-2xx is reported as offline', async () => {
     const fetchImpl = jest.fn().mockResolvedValue({ ok: false });
     await expect(checkHealth({ fetchImpl })).resolves.toEqual({ ok: false });
+  });
+});
+
+describe('export builders (F-006)', () => {
+  const { buildJiraReport, buildRedactedHar } = require('../../src/lib/report.js');
+  const SECRET = 'secret-xyz-123';
+  const failing = () =>
+    record(500, {
+      method: 'POST',
+      url: `https://app.example/pay?token=${SECRET}`,
+      statusText: 'Internal Server Error',
+      startedAt: '2026-09-29T03:00:00.000Z',
+      durationMs: 1420,
+      mimeType: 'application/json',
+      requestHeaders: { authorization: `Bearer ${SECRET}`, 'content-type': 'application/json' },
+      responseHeaders: { 'x-request-id': 'req_1' },
+      requestBody: JSON.stringify({ password: SECRET, amount: 1 }),
+      responseBody: '{"message":"gateway timeout"}',
+    });
+
+  test('Jira report uses wiki markup and contains no secrets', () => {
+    const jira = buildJiraReport(failing(), { summary: 'Gateway down.', severity: 'high', likelyCauses: ['a'], suggestedFixes: ['b'] }, {
+      notes: 'klik bayar',
+      tags: ['#P1-Blocker'],
+    });
+    expect(jira).toMatch(/^h3\. BRINSPECTOR — POST \/pay\?token=\[REDACTED\]/);
+    expect(jira).toContain('* *Tag:* #P1-Blocker');
+    expect(jira).toContain('h4. Catatan insiden');
+    expect(jira).toContain('{code}');
+    expect(jira).not.toContain(SECRET);
+  });
+
+  test('redacted HAR is valid HAR 1.2 and contains no secrets', () => {
+    const har = buildRedactedHar([failing(), record(0)], { version: '0.2.0' });
+    expect(har.log.version).toBe('1.2');
+    expect(har.log.creator).toEqual({ name: 'BRINSPECTOR', version: '0.2.0' });
+    expect(har.log.entries).toHaveLength(2);
+
+    const [first, second] = har.log.entries;
+    expect(first.request).toMatchObject({ method: 'POST', httpVersion: 'HTTP/1.1' });
+    expect(first.request.postData.mimeType).toBe('application/json');
+    expect(first.response).toMatchObject({ status: 500, statusText: 'Internal Server Error' });
+    expect(first.response.content.text).toContain('gateway timeout');
+    expect(first.timings.wait).toBe(1420);
+    expect(second.response._error).toBe('net::ERR_NAME_NOT_RESOLVED');
+    expect(JSON.stringify(har)).not.toContain(SECRET);
   });
 });

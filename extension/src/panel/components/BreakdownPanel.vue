@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import BiIcon from './BiIcon.vue';
+import StackTraceViewer from './StackTraceViewer.vue';
 import { describeStatus, formatBody, urlPath } from '../../lib/format.js';
 import { redactHeaders, redactUrl } from '../../lib/redact.js';
 
@@ -56,6 +57,9 @@ function isAccentHeader(name) {
     </label>
 
     <p v-if="!record" class="bd__empty" data-testid="breakdown-empty">Pilih error dari stream untuk melihat detailnya.</p>
+
+    <!-- JS exception records (spec F-004) carry record.exception = toExceptionView(...) -->
+    <StackTraceViewer v-else-if="record.exception" :exception="record.exception" />
 
     <article v-else class="bd__detail" data-testid="breakdown">
       <header class="bd__head">

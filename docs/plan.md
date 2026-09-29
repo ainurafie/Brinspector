@@ -64,8 +64,8 @@ Keputusan penting:
 | F-001 | Tangkap & tampilkan error network (sisa: tab *Payload & State*, separator navigasi, filter kategori) | `specs/features/F-001-capture-network-errors/spec.md` |
 | F-002 | AI Root Cause (sisa: provider nyata Foundry, Copy as Markdown yang rapi, pilihan bahasa) | `specs/features/F-002-ai-summary/spec.md` |
 | F-003 | Redaksi data sensitif (sisa: PII teks bebas, redaksi ulang di backend, preview payload) | `specs/features/F-003-privacy-redaction/spec.md` |
-| F-004 | Console & JS exceptions ("Console Trap", kartu *Exceptions*, stack frame) | `specs/features/F-004-console-exceptions/spec.md` |
-| F-006 | Incident notes, preset tag & export (.HAR ter-redaksi, Markdown, format Jira) | `specs/features/F-006-incident-report-export/spec.md` |
+| F-004 | Console & JS exceptions (sisa: hook Console Trap, baris `JS ERR`, kartu *Exceptions*; UI stack trace sudah ada) | `specs/features/F-004-console-exceptions/spec.md` |
+| F-006 | Incident notes & export (sisa: PDF; notes, tag, .HAR/JIRA/MD sudah ada) | `specs/features/F-006-incident-report-export/spec.md` |
 
 ### Eksplorasi (via OpenSpec `/opsx:propose`)
 - F-005 Popup toolbar + badge counter (frame 1:451/1:2).
@@ -164,8 +164,8 @@ File: `n4DsSHcxUMYVAl2JW5mbPH` · Page 1 (`0:1`). Berikan link **node spesifik**
 | 1:1159 | Extension Popup Shell Container | `InspectorHud.vue` | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1159) |
 | 1:1298 | Quick Summary AI Drawer / Diagnostic Widget | `AiRootCauseCard.vue` | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1298) |
 | 1:1345 | Deep Diagnostic Breakdown 1: 500 Payment Error Inspect | `BreakdownPanel.vue` | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1345) |
-| 1:1392 | Deep Diagnostic Breakdown 2: Console Stack Trace Viewer | F-004 (backlog) | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1392) |
-| 1:776 | BRINSPECTOR - Triggered Extension Modal & Diagnostics | F-006 notes & export, F-007 screenshot | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-776) |
+| 1:1392 | Deep Diagnostic Breakdown 2: Console Stack Trace Viewer | `StackTraceViewer.vue` (F-004) | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1392) |
+| 1:776 | BRINSPECTOR - Triggered Extension Modal & Diagnostics | `IncidentNotes.vue`, `ExportFormatSelector.vue` (F-006); F-007 screenshot | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-776) |
 | 1:451 | BRINSPECTOR - Default Chrome UI with Cyber Extension | F-005 popup + badge | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-451) |
 | 1:2 | BRINSPECTOR - Chrome Extension Installed View | F-005 popup (varian) | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-2) |
 | 1:1121 | BRINSPECTOR Extension Logo | Ikon (`src/panel/assets/logo.svg`) | [buka](https://www.figma.com/design/n4DsSHcxUMYVAl2JW5mbPH/Untitled?node-id=1-1121) |
