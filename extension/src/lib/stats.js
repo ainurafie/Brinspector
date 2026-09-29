@@ -18,15 +18,17 @@ function statusList(records, limit = 3) {
  * @returns {{ total, server, client, network, networkDrop, peakLatencyMs, networkDropStatuses, clientStatuses }}
  */
 export function computeStats(records) {
-  const drops = records.filter(isNetworkDrop);
-  const clients = records.filter(isClientError);
+  const networkRecords = records.filter((record) => !record.exception);
+  const drops = networkRecords.filter(isNetworkDrop);
+  const clients = networkRecords.filter(isClientError);
   return {
     total: records.length,
-    server: records.filter((r) => r.status >= 500).length,
+    server: networkRecords.filter((r) => r.status >= 500).length,
     client: clients.length,
-    network: records.filter((r) => r.status === 0).length,
+    network: networkRecords.filter((r) => r.status === 0).length,
+    exceptions: records.filter((record) => record.exception).length,
     networkDrop: drops.length,
-    peakLatencyMs: records.reduce((max, r) => Math.max(max, Number(r.durationMs) || 0), 0),
+    peakLatencyMs: networkRecords.reduce((max, r) => Math.max(max, Number(r.durationMs) || 0), 0),
     networkDropStatuses: statusList(drops),
     clientStatuses: statusList(clients),
   };
@@ -39,6 +41,7 @@ export function buildHeadline(stats) {
     stats.server && `${stats.server} Server`,
     stats.client && `${stats.client} Client`,
     stats.network && `${stats.network} Network`,
+    stats.exceptions && `${stats.exceptions} ${stats.exceptions === 1 ? 'Exception' : 'Exceptions'}`,
   ].filter(Boolean);
   const noun = stats.total === 1 ? 'Failure' : 'Failures';
   return { title: `${stats.total} ${noun} Detected`, detail: `(${parts.join(', ')})` };

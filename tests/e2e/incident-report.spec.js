@@ -32,7 +32,7 @@ test.describe('F-006 incident notes & export', () => {
     await expect(blocker).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('MD and JIRA need a selected failure; PDF stays disabled', async ({ page }) => {
+  test('MD, JIRA and PDF need a selected failure', async ({ page }) => {
     await installChromeStub(page, failures());
     await page.goto('/panel.html');
 
@@ -44,6 +44,41 @@ test.describe('F-006 incident notes & export', () => {
     await page.getByTestId('error-row').first().click();
     await expect(page.getByTestId('export-md')).toBeEnabled();
     await expect(page.getByTestId('export-jira')).toBeEnabled();
+    await expect(page.getByTestId('export-pdf')).toBeEnabled();
+  });
+
+  test('PDF opens a printable redacted report from the DevTools panel', async ({ page, context }) => {
+    await installChromeStub(page, failures());
+    await context.addInitScript(() => {
+      window.print = () => { window.__printCalled = true; };
+    });
+    await page.goto('/panel.html');
+
+    await page.getByTestId('error-row').first().click();
+    await page.getByTestId('generate-button').click();
+    await expect(page.getByTestId('ai-summary')).toBeVisible();
+    await page.getByTestId('notes-input').fill(`Klik bayar gagal, Bearer ${SECRET}`);
+    await page.getByTestId('preset-tag').filter({ hasText: '#PaymentGateway' }).click();
+    const [reportPage] = await Promise.all([context.waitForEvent('page'), page.getByTestId('export-pdf').click()]);
+    await expect.poll(() => reportPage.evaluate(() => window.__printCalled)).toBe(true);
+
+    const text = await reportPage.locator('main').innerText();
+    expect(text).toContain('### BRINSPECTOR — POST /api/v1/payments/charge?token=[REDACTED]');
+    expect(text).toContain('#PaymentGateway');
+    expect(text).toContain('Klik bayar gagal');
+    expect(text).toContain('AI Root Cause');
+    expect(text).not.toContain(SECRET);
+    await reportPage.close();
+  });
+
+  test('blocked print window displays a useful message', async ({ page }) => {
+    await installChromeStub(page, failures());
+    await page.goto('/panel.html');
+    await page.getByTestId('error-row').first().click();
+    await page.evaluate(() => { window.open = () => null; });
+
+    await page.getByTestId('export-pdf').click();
+    await expect(page.getByTestId('toast')).toHaveText('Allow pop-ups to print the report');
   });
 
   test('Markdown export contains notes, tags and AI result — and no secrets', async ({ page }) => {

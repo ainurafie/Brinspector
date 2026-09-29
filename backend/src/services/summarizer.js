@@ -1,4 +1,5 @@
 const { buildMessages, CATEGORIES, SEVERITIES } = require('./prompt');
+const { redactRecord } = require('./redact');
 
 class ProviderError extends Error {}
 
@@ -128,8 +129,9 @@ function createSummarizer(config, { fetchImpl = globalThis.fetch } = {}) {
   return {
     provider: config.provider,
     async summarize(error, language = 'id') {
-      if (config.provider === 'mock') return normalizeSummary(mockSummary(error, language), 'mock');
-      const content = await callChatCompletion(config, buildMessages(error, language), fetchImpl);
+      const safeError = redactRecord(error);
+      if (config.provider === 'mock') return normalizeSummary(mockSummary(safeError, language), 'mock');
+      const content = await callChatCompletion(config, buildMessages(safeError, language), fetchImpl);
       return normalizeSummary(content, config.provider);
     },
   };

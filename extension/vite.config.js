@@ -23,6 +23,13 @@ export default defineConfig({
       input: {
         devtools: resolve(root, 'devtools.html'),
         panel: resolve(root, 'panel.html'),
+        popup: resolve(root, 'popup.html'),
+        background: resolve(root, 'src/background/serviceWorker.js'),
+      },
+      output: {
+        // The manifest references the service worker by a fixed path, so it can't use the
+        // hashed filenames the other (HTML) entries get.
+        entryFileNames: (chunk) => (chunk.name === 'background' ? 'background.js' : 'assets/[name]-[hash].js'),
       },
     },
   },

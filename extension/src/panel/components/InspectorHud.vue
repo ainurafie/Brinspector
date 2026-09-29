@@ -15,9 +15,11 @@ const props = defineProps({
   aiBusy: { type: Boolean, default: false },
   backend: { type: Object, required: true },
   apiBaseUrl: { type: String, required: true },
+  consoleTrapError: { type: String, default: '' },
   available: { type: Boolean, default: true },
 });
 const autoIntercept = defineModel('autoIntercept', { type: Boolean, default: true });
+const consoleTrap = defineModel('consoleTrap', { type: Boolean, default: false });
 defineEmits(['select', 'generate', 'copy-report', 'clear']);
 
 // eslint-disable-next-line no-undef
@@ -51,8 +53,17 @@ const latency = computed(() => {
 
     <div class="hud__toggles">
       <ToggleSwitch v-model="autoIntercept" label="Auto-Intercept" data-testid="toggle-intercept" />
-      <ToggleSwitch :model-value="false" label="Console Trap" hint="F-004" disabled />
+      <ToggleSwitch
+        v-model="consoleTrap"
+        label="Console Trap"
+        :hint="available ? 'Capture page exceptions' : 'Open this panel in DevTools'"
+        :disabled="!available"
+        data-testid="toggle-console-trap"
+      />
     </div>
+    <p v-if="consoleTrapError" class="hud__console-error" role="alert" data-testid="console-trap-error">
+      {{ consoleTrapError }}
+    </p>
 
     <div class="hud__stats">
       <StatCard
@@ -78,6 +89,14 @@ const latency = computed(() => {
         caption="Peak"
         tone="accent"
         :ratio="latencyRatio"
+      />
+      <StatCard
+        label="Exceptions"
+        :value="stats.exceptions"
+        caption="Script"
+        tone="danger"
+        :ratio="ratio(stats.exceptions)"
+        data-testid="stat-exceptions"
       />
     </div>
 
@@ -160,7 +179,8 @@ const latency = computed(() => {
 .hud__monitor--off { background: var(--bi-chip); color: var(--bi-text-muted); }
 
 .hud__toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.hud__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.hud__console-error { margin: 0; color: var(--bi-danger); font-size: 11px; overflow-wrap: anywhere; }
+.hud__stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 
 .hud__generate {
   display: flex;

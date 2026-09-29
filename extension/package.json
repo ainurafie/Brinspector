@@ -28,7 +28,8 @@
       "<rootDir>/tests/unit/**/*.test.js"
     ],
     "collectCoverageFrom": [
-      "src/lib/**/*.js"
+      "src/lib/**/*.js",
+      "src/background/**/*.js"
     ]
   }
 }

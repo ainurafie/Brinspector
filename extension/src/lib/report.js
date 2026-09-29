@@ -25,9 +25,9 @@ export function buildMarkdownReport(record, ai = null, { notes = '', tags = [] }
   if (notes.trim()) lines.push('', '#### Catatan insiden', '', redactText(notes.trim()));
 
   if (ai) {
-    lines.push('', `#### AI Root Cause (perkiraan AI · severity: ${ai.severity})`, '', ai.summary);
-    if (ai.likelyCauses?.length) lines.push('', '**Kemungkinan penyebab**', ...ai.likelyCauses.map((c) => `- ${c}`));
-    if (ai.suggestedFixes?.length) lines.push('', '**Saran perbaikan**', ...ai.suggestedFixes.map((f) => `- ${f}`));
+    lines.push('', `#### AI Root Cause (perkiraan AI · severity: ${redactText(ai.severity)})`, '', redactText(ai.summary));
+    if (ai.likelyCauses?.length) lines.push('', '**Kemungkinan penyebab**', ...ai.likelyCauses.map((cause) => `- ${redactText(cause)}`));
+    if (ai.suggestedFixes?.length) lines.push('', '**Saran perbaikan**', ...ai.suggestedFixes.map((fix) => `- ${redactText(fix)}`));
   }
 
   if (safe.responseBody) {

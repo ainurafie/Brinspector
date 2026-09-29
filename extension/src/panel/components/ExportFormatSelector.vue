@@ -12,7 +12,7 @@ defineEmits(['export']);
     <button type="button" class="efs__btn" :disabled="!canExportAll" title="Download all failures as redacted HAR" data-testid="export-har" @click="$emit('export', 'har')">.HAR</button>
     <button type="button" class="efs__btn" :disabled="!canExportSelected" title="Copy selected failure as Jira markup" data-testid="export-jira" @click="$emit('export', 'jira')">JIRA</button>
     <button type="button" class="efs__btn" :disabled="!canExportSelected" title="Download selected failure as Markdown" data-testid="export-md" @click="$emit('export', 'md')">MD</button>
-    <button type="button" class="efs__btn" disabled title="PDF export — F-006 backlog" data-testid="export-pdf">PDF</button>
+    <button type="button" class="efs__btn" :disabled="!canExportSelected" title="Print selected failure as PDF" data-testid="export-pdf" @click="$emit('export', 'pdf')">PDF</button>
   </div>
 </template>
 

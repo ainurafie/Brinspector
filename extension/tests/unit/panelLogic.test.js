@@ -10,6 +10,7 @@ import {
 import { computeStats, buildHeadline } from '../../src/lib/stats.js';
 import { buildMatcher, filterRecords } from '../../src/lib/filter.js';
 import { buildMarkdownReport } from '../../src/lib/report.js';
+import { printReport } from '../../src/panel/printReport.js';
 import { checkHealth } from '../../src/lib/apiClient.js';
 
 const record = (status, extra = {}) => ({
@@ -54,6 +55,14 @@ describe('format', () => {
     expect(shortNetError(null)).toBe('Network error');
   });
 
+  test('describeStatus keeps exception stream labels concise', () => {
+    expect(describeStatus({
+      status: 0,
+      errorText: 'TypeError: failed\n    at submit (app.js:1:1)',
+      exception: { type: 'TypeError' },
+    })).toBe('TypeError');
+  });
+
   test('formatBody pretty-prints JSON and keeps text', () => {
     expect(formatBody('{"a":1}')).toBe('{\n  "a": 1\n}');
     expect(formatBody('<html>oops</html>')).toBe('<html>oops</html>');
@@ -79,6 +88,18 @@ describe('stats', () => {
       peakLatencyMs: 15002,
       networkDropStatuses: '500 / 504 / NET',
       clientStatuses: '401 / 404',
+    });
+  });
+
+  test('computeStats counts exceptions separately from network drops', () => {
+    const stats = computeStats([
+      record(0),
+      record(0, { method: 'JS ERR', category: 'SCRIPT_ERROR', exception: { type: 'TypeError' } }),
+    ]);
+    expect(stats).toMatchObject({ total: 2, network: 1, networkDrop: 1, exceptions: 1 });
+    expect(buildHeadline(stats)).toEqual({
+      title: '2 Failures Detected',
+      detail: '(1 Network, 1 Exception)',
     });
   });
 
@@ -155,6 +176,38 @@ describe('report', () => {
     expect(md).toContain('#### Catatan insiden');
     expect(md).toContain('Terjadi setelah klik bayar.');
     expect(md).not.toContain(jwt);
+  });
+
+  test('redacts sensitive text echoed by AI before printing', () => {
+    const secret = 'someone@example.com';
+    const md = buildMarkdownReport(record(500), {
+      severity: 'high', summary: secret, likelyCauses: [secret], suggestedFixes: [secret],
+    });
+    expect(md).not.toContain(secret);
+    expect(md).toContain('[REDACTED]');
+  });
+});
+
+describe('printable report', () => {
+  test('sets report text as textContent and calls print on the new window', () => {
+    const content = {};
+    const main = { appendChild: jest.fn() };
+    const style = {};
+    const page = {
+      createElement: jest.fn((tag) => ({ style, main, pre: content })[tag]),
+      head: { appendChild: jest.fn() },
+      body: { replaceChildren: jest.fn() },
+    };
+    const reportWindow = { document: page, focus: jest.fn(), print: jest.fn() };
+    const markdown = '### Report\n<script>alert(1)</script>';
+
+    printReport(reportWindow, markdown);
+
+    expect(page.title).toBe('BRINSPECTOR Incident Report');
+    expect(content.textContent).toBe(markdown);
+    expect(main.appendChild).toHaveBeenCalledWith(content);
+    expect(page.body.replaceChildren).toHaveBeenCalledWith(main);
+    expect(reportWindow.print).toHaveBeenCalledTimes(1);
   });
 });
 

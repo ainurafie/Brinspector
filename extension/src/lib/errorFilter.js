@@ -12,14 +12,23 @@ export const CATEGORIES = Object.freeze([
   'UNKNOWN',
 ]);
 
+/**
+ * True when a status/errorText pair represents a failure: status >= 400, no response
+ * at all (status 0), or a browser-level error. Shared with `webRequestClassify.js` so the
+ * DevTools panel and the toolbar badge (F-005) never disagree on what "failed" means.
+ */
+export function isFailedStatus(status, errorText) {
+  if (errorText) return true;
+  const value = Number(status);
+  if (value === 0) return true;
+  return value >= 400;
+}
+
 /** A request "failed" when the server answered >= 400, or the browser never got an answer. */
 export function isFailedEntry(entry) {
   const response = entry?.response;
   if (!response) return false;
-  const status = Number(response.status);
-  if (response._error) return true;
-  if (status === 0) return true;
-  return status >= 400;
+  return isFailedStatus(Number(response.status), response._error);
 }
 
 /** HAR headers come as [{ name, value }]; turn them into a lowercase-keyed object. */

@@ -87,4 +87,54 @@ test.describe('F-001 capture network errors', () => {
     await expect(page.getByTestId('breakdown')).toContainText('[REDACTED]');
     await expect(page.locator('body')).not.toContainText('secret-abc');
   });
+
+  test('Console Trap captures exceptions, shows stack trace, reinstalls after navigation, and uninstalls when off', async ({ page }) => {
+    await installChromeStub(page);
+    await page.goto('/panel.html');
+    await page.evaluate(() => {
+      window.__originalPageErrorHandler = () => {
+        window.__originalPageErrorCalls = (window.__originalPageErrorCalls || 0) + 1;
+        return false;
+      };
+      window.onerror = window.__originalPageErrorHandler;
+    });
+
+    const toggle = page.getByTestId('toggle-console-trap');
+    await toggle.click();
+    await expect.poll(() => page.evaluate(() => window.__devtoolsEvalCalls.filter((script) => script.includes('page.__brinspector = state')).length)).toBe(1);
+
+    await page.evaluate(() => window.onerror(
+      'TypeError: payment failed',
+      'https://app.example/payment.js',
+      12,
+      4,
+      { stack: 'TypeError: payment failed\n    at submit (https://app.example/payment.js:12:4)' },
+    ));
+    const exceptionRow = page.getByTestId('error-row');
+    await expect(exceptionRow).toHaveCount(1);
+    await expect(exceptionRow).toContainText('JS ERR');
+    await expect(page.getByTestId('stat-exceptions')).toContainText('1');
+    await expect(page.evaluate(() => window.__originalPageErrorCalls)).resolves.toBe(1);
+
+    await exceptionRow.click();
+    await expect(page.getByTestId('stack-trace-viewer')).toBeVisible();
+    await expect(page.getByTestId('exception-message')).toContainText('payment failed');
+    await expect(page.getByTestId('stack-frames')).toContainText('submit');
+
+    await page.evaluate(() => window.__navigate('https://app.example/next'));
+    await expect.poll(() => page.evaluate(() => window.__devtoolsEvalCalls.filter((script) => script.includes('page.__brinspector = state')).length)).toBe(2);
+
+    await toggle.click();
+    await expect.poll(() => page.evaluate(() => window.__brinspector)).toBeUndefined();
+    await expect.poll(() => page.evaluate(() => window.onerror === window.__originalPageErrorHandler)).toBe(true);
+  });
+
+  test('Console Trap shows a message when inspected-page evaluation fails', async ({ page }) => {
+    await installChromeStub(page);
+    await page.goto('/panel.html');
+    await page.evaluate(() => { window.__failNextDevtoolsEval = true; });
+
+    await page.getByTestId('toggle-console-trap').click();
+    await expect(page.getByTestId('console-trap-error')).toContainText('Page evaluation blocked by CSP');
+  });
 });

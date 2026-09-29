@@ -1,9 +1,22 @@
 const { ProviderError } = require('../services/summarizer');
+const { CATEGORIES, SEVERITIES } = require('../services/prompt');
 
 const nullableString = { type: ['string', 'null'] };
 const headerMap = { type: ['object', 'null'], additionalProperties: { type: 'string' } };
 
+const errorResponseSchema = {
+  type: 'object',
+  properties: {
+    statusCode: { type: 'integer' },
+    error: { type: 'string' },
+    message: { type: 'string' },
+  },
+};
+
 const summarizeSchema = {
+  summary: 'Summarize a failed network request',
+  description: 'Sends a redacted failed-request record to the configured AI provider (or the mock provider) and returns a root-cause summary.',
+  tags: ['summarize'],
   body: {
     type: 'object',
     required: ['error'],
@@ -27,6 +40,21 @@ const summarizeSchema = {
         },
       },
     },
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        summary: { type: 'string' },
+        category: { type: 'string', enum: CATEGORIES },
+        likelyCauses: { type: 'array', items: { type: 'string' } },
+        suggestedFixes: { type: 'array', items: { type: 'string' } },
+        severity: { type: 'string', enum: SEVERITIES },
+        provider: { type: 'string' },
+      },
+    },
+    422: errorResponseSchema,
+    502: errorResponseSchema,
   },
 };
 

@@ -73,6 +73,22 @@ test('redactText handles plain text without secrets', () => {
   expect(redactText('Something went wrong')).toBe('Something went wrong');
 });
 
+test('redactText replaces email addresses and preserves surrounding text', () => {
+  expect(redactText('Contact Ani+qa@example.co.id for help.')).toBe(`Contact ${REDACTED} for help.`);
+});
+
+test('redactText replaces formatted Indonesian mobile numbers', () => {
+  expect(redactText('Call 0812-3456-7890 or +62 812 3456 7890.')).toBe(
+    `Call ${REDACTED} or ${REDACTED}.`,
+  );
+});
+
+test('redactText replaces NIK and 16-digit sequences but not longer numbers', () => {
+  expect(redactText('NIK 3175061205900001; card 4111 1111-1111 1111; ref 12345678901234567.')).toBe(
+    `NIK ${REDACTED}; card ${REDACTED}; ref 12345678901234567.`,
+  );
+});
+
 test('redactRecord does not mutate the original record', () => {
   const original = {
     url: 'https://a.com/?password=1',

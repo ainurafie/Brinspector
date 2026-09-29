@@ -33,6 +33,9 @@ export const SENSITIVE_KEYS = new Set([
 
 const JWT_PATTERN = /eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*/g;
 const BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi;
+const EMAIL_PATTERN = /[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+/gi;
+const INDONESIAN_PHONE_PATTERN = /(?<!\d)(?:\+62[ -]?|0)8(?:[ -]?\d)+(?!\d)/g;
+const NUMBER_SEQUENCE_PATTERN = /(?<!\d)\d(?:[\d -]*\d)?(?!\d)/g;
 
 function isSensitiveKey(key) {
   return SENSITIVE_KEYS.has(String(key).toLowerCase());
@@ -83,12 +86,26 @@ export function redactJsonValue(value) {
   return value;
 }
 
-/** Redact token-looking strings in free text. */
+function redactIndonesianPhone(match) {
+  const digits = match.replace(/\D/g, '');
+  const nationalDigits = digits.startsWith('62') ? digits.length - 2 : digits.length;
+  const minLength = digits.startsWith('62') ? 9 : 10;
+  const maxLength = digits.startsWith('62') ? 12 : 13;
+  return nationalDigits >= minLength && nationalDigits <= maxLength ? REDACTED : match;
+}
+
+function redactSixteenDigitSequence(match) {
+  return match.replace(/\D/g, '').length === 16 ? REDACTED : match;
+}
+
+/** Redact tokens and common PII patterns in free text. */
 export function redactText(text) {
   return String(text)
     .replace(BEARER_PATTERN, `Bearer ${REDACTED}`)
-    .replace(JWT_PATTERN, REDACTED);
-  // TODO(F-003 backlog): email, Indonesian phone numbers, NIK, card numbers.
+    .replace(JWT_PATTERN, REDACTED)
+    .replace(EMAIL_PATTERN, REDACTED)
+    .replace(INDONESIAN_PHONE_PATTERN, redactIndonesianPhone)
+    .replace(NUMBER_SEQUENCE_PATTERN, redactSixteenDigitSequence);
 }
 
 export function truncate(text, max = MAX_BODY_CHARS) {

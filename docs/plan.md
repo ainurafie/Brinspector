@@ -65,10 +65,10 @@ Keputusan penting:
 | F-002 | AI Root Cause (sisa: provider nyata Foundry, Copy as Markdown yang rapi, pilihan bahasa) | `specs/features/F-002-ai-summary/spec.md` |
 | F-003 | Redaksi data sensitif (sisa: PII teks bebas, redaksi ulang di backend, preview payload) | `specs/features/F-003-privacy-redaction/spec.md` |
 | F-004 | Console & JS exceptions (sisa: hook Console Trap, baris `JS ERR`, kartu *Exceptions*; UI stack trace sudah ada) | `specs/features/F-004-console-exceptions/spec.md` |
-| F-006 | Incident notes & export (sisa: PDF; notes, tag, .HAR/JIRA/MD sudah ada) | `specs/features/F-006-incident-report-export/spec.md` |
+| F-006 | Incident notes & export (sisa: kartu Diagnostic Bundle Packed; notes, tag, .HAR/JIRA/MD/PDF sudah ada) | `specs/features/F-006-incident-report-export/spec.md` |
+| F-005 | Popup toolbar + badge counter (sisa: verifikasi manual Chrome asli, E2E) | `specs/features/F-005-toolbar-popup-badge/spec.md` |
 
 ### Eksplorasi (via OpenSpec `/opsx:propose`)
-- F-005 Popup toolbar + badge counter (frame 1:451/1:2).
 - F-007 Screenshot viewport otomatis dengan penanda elemen gagal — **wajib opt-in dan blur area input**.
 - F-008 Halaman Options: URL backend, bahasa ringkasan, batas ukuran body.
 

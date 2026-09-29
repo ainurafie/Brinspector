@@ -7,7 +7,7 @@
 | F-003 | [Redaksi data sensitif](F-003-privacy-redaction/spec.md) | Baseline sebagian | — | |
 | F-004 | [Console & JS exceptions](F-004-console-exceptions/spec.md) | UI siap, capture backlog | 1:1130, 1:776 | |
 | F-006 | [Incident notes & export](F-006-incident-report-export/spec.md) | Sebagian besar selesai (PDF backlog) | 1:776 | |
-| F-005 | Popup toolbar + badge | Eksplorasi (OpenSpec) | 1:451, 1:2 | |
+| F-005 | [Popup toolbar + badge](F-005-toolbar-popup-badge/spec.md) | Baseline (lihat backlog) | 1:451, 1:2 | |
 | F-007 | Screenshot viewport + fault target | Eksplorasi (OpenSpec) | 1:776 | |
 | F-008 | Halaman Options | Eksplorasi (OpenSpec) | — | |
 

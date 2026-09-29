@@ -58,6 +58,7 @@ export function shortNetError(errorText) {
 
 /** Short status label for badges and the stream, e.g. "500 Server Err", "ERR_FAILED". */
 export function describeStatus(record) {
+  if (record.exception) return record.exception.type || 'JavaScript Error';
   if (!record.status) return shortNetError(record.errorText);
   const label = STATUS_SHORT[record.status] || record.statusText || 'Error';
   return `${record.status} ${label}`;
@@ -71,4 +72,11 @@ export function formatBody(body) {
   } catch {
     return String(body);
   }
+}
+
+/** Toolbar badge text (F-005): 0 → "" (no badge), 1-99 → the number, 100+ → "99+". */
+export function formatBadgeCount(count) {
+  const value = Math.max(0, Math.round(Number(count) || 0));
+  if (value === 0) return '';
+  return value > 99 ? '99+' : String(value);
 }

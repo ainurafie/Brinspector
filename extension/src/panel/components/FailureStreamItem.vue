@@ -17,6 +17,7 @@ const CATEGORY_LABEL = {
   NETWORK_ERROR: 'No response',
   CORS_ERROR: 'Blocked by CORS',
   TIMEOUT: 'Timed out',
+  SCRIPT_ERROR: 'JavaScript exception',
   UNKNOWN: 'Unknown failure',
 };
 

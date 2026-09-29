@@ -7,12 +7,20 @@ import BreakdownPanel from './components/BreakdownPanel.vue';
 import IncidentNotes from './components/IncidentNotes.vue';
 import ExportFormatSelector from './components/ExportFormatSelector.vue';
 import { useNetworkErrors } from './useNetworkErrors.js';
+import { useConsoleTrap } from './useConsoleTrap.js';
 import { useAiSummary } from './useAiSummary.js';
 import { computeStats } from '../lib/stats.js';
 import { filterRecords } from '../lib/filter.js';
 import { buildMarkdownReport, buildJiraReport, buildRedactedHar } from '../lib/report.js';
+import { printReport } from './printReport.js';
 
 const { errors, paused, targetUrl, available, clear, ensureResponseBody } = useNetworkErrors();
+const {
+  enabled: consoleTrapEnabled,
+  records: exceptionRecords,
+  error: consoleTrapError,
+  clear: clearExceptionRecords,
+} = useConsoleTrap(available);
 const ai = useAiSummary({ ensureResponseBody });
 
 const filter = ref('');
@@ -21,18 +29,24 @@ const toast = ref('');
 const notes = ref(''); // Incident Notes (spec F-006), included in Copy Report
 const tags = ref([]);
 
+const allRecords = computed(() => [...errors.value, ...exceptionRecords.value].sort((left, right) => {
+  const leftTime = Date.parse(left.startedAt || '') || 0;
+  const rightTime = Date.parse(right.startedAt || '') || 0;
+  return rightTime - leftTime;
+}));
 const autoIntercept = computed({
   get: () => !paused.value,
   set: (on) => { paused.value = !on; },
 });
-const stats = computed(() => computeStats(errors.value));
-const visible = computed(() => filterRecords(errors.value, filter.value));
-const selected = computed(() => errors.value.find((r) => r.id === selectedId.value) || null);
+const stats = computed(() => computeStats(allRecords.value));
+const visible = computed(() => filterRecords(allRecords.value, filter.value));
+const networkVisible = computed(() => visible.value.filter((record) => !record.exception));
+const selected = computed(() => allRecords.value.find((r) => r.id === selectedId.value) || null);
 const aiState = computed(() => ai.stateFor(selected.value));
 
 function select(id) {
   selectedId.value = id;
-  ensureResponseBody(selected.value);
+  if (!selected.value?.exception) ensureResponseBody(selected.value);
 }
 
 function generate(force = false) {
@@ -41,6 +55,7 @@ function generate(force = false) {
 
 function clearAll() {
   clear();
+  clearExceptionRecords();
   ai.reset();
   selectedId.value = null;
 }
@@ -88,12 +103,18 @@ function stamp() {
 
 // Export bar (spec F-006). Every format is built from redacted data in src/lib/report.js.
 async function exportAs(format) {
+  // Open synchronously while the click gesture is active; DevTools may block delayed pop-ups.
+  const reportWindow = format === 'pdf' ? window.open('', '_blank') : null;
+  if (format === 'pdf' && !reportWindow) {
+    flash('Allow pop-ups to print the report');
+    return;
+  }
   const incident = { notes: notes.value, tags: tags.value };
   if (format === 'har') {
-    await Promise.all(visible.value.map((record) => ensureResponseBody(record)));
+    await Promise.all(networkVisible.value.map((record) => ensureResponseBody(record)));
     // eslint-disable-next-line no-undef
     const version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
-    download(`brinspector-${stamp()}.har`, JSON.stringify(buildRedactedHar(visible.value, { version }), null, 2), 'application/json');
+    download(`brinspector-${stamp()}.har`, JSON.stringify(buildRedactedHar(networkVisible.value, { version }), null, 2), 'application/json');
     flash('HAR downloaded (redacted)');
     return;
   }
@@ -106,6 +127,8 @@ async function exportAs(format) {
   } else if (format === 'md') {
     download(`brinspector-${stamp()}.md`, buildMarkdownReport(selected.value, ai, incident), 'text/markdown');
     flash('Markdown downloaded (redacted)');
+  } else if (format === 'pdf') {
+    printReport(reportWindow, buildMarkdownReport(selected.value, ai, incident));
   }
 }
 
@@ -128,13 +151,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
       <div class="panel__col">
         <InspectorHud
           v-model:auto-intercept="autoIntercept"
+          v-model:console-trap="consoleTrapEnabled"
           :records="visible"
-          :total-count="errors.length"
+          :total-count="allRecords.length"
           :stats="stats"
           :selected-id="selectedId"
           :ai-busy="aiState.status === 'loading'"
           :backend="ai.backend.value"
           :api-base-url="ai.apiBaseUrl"
+          :console-trap-error="consoleTrapError"
           :available="available"
           @select="select"
           @generate="generate()"
@@ -150,7 +175,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
           <template #export>
             <ExportFormatSelector
               :can-export-selected="Boolean(selected)"
-              :can-export-all="visible.length > 0"
+              :can-export-all="networkVisible.length > 0"
               @export="exportAs"
             />
           </template>

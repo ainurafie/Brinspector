@@ -1,6 +1,6 @@
 # F-006 — Incident Notes & Export Laporan
 
-Status: **Sebagian besar selesai** — sudah: kartu *Incident Notes* (`IncidentNotes.vue`, maks 500 karakter, preset tag toggle), export bar (`ExportFormatSelector.vue`): `.HAR` ter-redaksi (semua failure yang terlihat), `JIRA` (salin ke clipboard), `MD` (unduh); catatan & tag ikut ke Copy Report. Builder murni `buildMarkdownReport`, `buildJiraReport`, `buildRedactedHar` + unit test + 5 E2E. Backlog: `PDF` (tombol disabled), kartu *Diagnostic Bundle Packed*.
+ Status: **Sebagian besar selesai** — sudah: kartu *Incident Notes* (`IncidentNotes.vue`, maks 500 karakter, preset tag toggle), export bar (`ExportFormatSelector.vue`): `.HAR` ter-redaksi (semua failure yang terlihat), `JIRA` (salin ke clipboard), `MD` (unduh), `PDF` (halaman laporan ter-redaksi, dialog print); catatan & tag ikut ke Copy Report. Builder murni `buildMarkdownReport`, `buildJiraReport`, `buildRedactedHar` + unit test + 7 E2E. Backlog: kartu *Diagnostic Bundle Packed*.
 
 UI: Figma frame 1:776 — *Catatan Insiden / Incident Notes* (textarea + preset tag), *Diagnostic Bundle Packed*, tombol ekspor `.HAR` / `JIRA` / `MD` / `PDF`. Frame 1:1130 — tombol *Export HAR*.
 
