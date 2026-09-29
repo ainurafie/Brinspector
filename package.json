@@ -1,0 +1,25 @@
+{
+  "name": "brinspector",
+  "version": "0.2.0",
+  "private": true,
+  "description": "BRINSPECTOR — Chrome extension that captures failed requests and explains the root cause with AI",
+  "workspaces": [
+    "extension",
+    "backend"
+  ],
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:ext": "npm run dev --workspace extension",
+    "build:ext": "npm run build --workspace extension",
+    "test": "npm test --workspace extension && npm test --workspace backend",
+    "test:coverage": "npm run test:coverage --workspace extension && npm run test:coverage --workspace backend",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

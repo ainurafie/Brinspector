@@ -1,0 +1,29 @@
+# Graphify: AST-only graph of source code (no LLM, no token cost)
+
+# Documentation and text assets
+*.md
+*.txt
+*.pdf
+*.html
+
+# Images, diagrams, media
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.mp4
+*.wav
+
+# Config and infrastructure
+*.yaml
+*.yml
+*.json
+*.toml
+
+# Build output, test artifacts, dependencies
+node_modules/
+extension/dist/
+playwright-report/
+test-results/
+coverage/
+graphify-out/
